@@ -1,45 +1,45 @@
 #Set the new Azure Machine Size for the Machine Catalog
 #NOTE: This just sets the new size for all machines - machines already existing that the customer wants to keep must be reprovisioned using the steps below
 #NOTE 2: Use the Machine Catalog and ServiceOffering UIDs from your particular machine catalog - when in doubt, verify or ask a Pro Services Resource
-Set-ProvScheme -ProvisioningSchemeName "HCC MCS Prod 2" -ServiceOffering "XDHyp:\HostingUnits\7b2e3adc-6637-419a-b043-d2f459f9d0f0\serviceoffering.folder\Standard_D4ads_v5.serviceoffering"
+Set-ProvScheme -ProvisioningSchemeName "MC Name" -ServiceOffering "XDHyp:\HostingUnits\UID\serviceoffering.folder\Standard_D4ads_v5.serviceoffering"
 
-#NOTE: All steps use HCC-APP101 as an example - commands are newer and better in newer versions - see citrix docs for details
+#NOTE: All steps use DOMAIN\MACHINENAME as an example - commands are newer and better in newer versions - see citrix docs for details
 #Step 1 - Remove from Delivery Group in studio
 
 #Step 2 - Remove Machine from the Machine Catalog - this should keep the machine from showing the machine catalog in studio
-Remove-BrokerMachine -MachineName "HHINC\HCC-APP101" -force
+Remove-BrokerMachine -MachineName "DOMAIN\MACHINENAME" -force
 
 #Step 3 - Check Machine State - should be "InUse"
-Get-AcctADAccount | Where-Object {$_.ADAccountName -like "*HCC-APP101*"} | Select-Object ADAccountName, State
+Get-AcctADAccount | Where-Object {$_.ADAccountName -like "*MACHINENAME*"} | Select-Object ADAccountName, State
 
 #Step 4 - Get Provisioning Scheme ID
-Get-ProvVM -ProvisioningSchemeName "HCC MCS Prod 2" -vmname "hcc-app101" |Select vmid
+Get-ProvVM -ProvisioningSchemeName "MC Name" -vmname "MACHINENAME" |Select vmid
 
 #Step 5 - Use Provisioning Scheme ID to unlock the account
-Unlock-ProvVM -VMID "citrix-xd-4bf270d2-4610-492d-9e8a-0f0ce90b444e-m4i67/HCC-APP101" -ProvisioningSchemeName "HCC MCS Prod 2"
+Unlock-ProvVM -VMID "RESOURCE GROUP/MACHINENAME" -ProvisioningSchemeName "MC Name"
 
 #Step 6 - Remove the VM provisioning scheme (this is separate from removing from the machine catalog and has to be done after the unlock)
 #Note - you can watch the progress in studio under the Actions Tab
-Remove-ProvVM -ProvisioningSchemeName "HCC MCS Prod 2" -VMName "HCC-APP101"
+Remove-ProvVM -ProvisioningSchemeName "MC Name" -VMName "MACHINENAME"
 
 #Step 7 - Check Machine State - should be "Tainted"
 #NOTE - This is the same as step 3 except for the state change
-Get-AcctADAccount | Where-Object {$_.ADAccountName -like "*HCC-APP101*"} | Select-Object ADAccountName, State
+Get-AcctADAccount | Where-Object {$_.ADAccountName -like "*MACHINENAME*"} | Select-Object ADAccountName, State
 
 #Step 8 - Repair Tainted account
 #NOTE - You should receive a success state and 0 failed
-Repair-AcctADAccount -ADAccountName "HHINC\HCC-APP101$"
+Repair-AcctADAccount -ADAccountName "DOMAIN\MACHINENAME$"
 
 #Step 7 - Check Machine State - should be "Available"
 #NOTE - This is the same as step 3 except for the state change
-Get-AcctADAccount | Where-Object {$_.ADAccountName -like "*HCC-APP101*"} | Select-Object ADAccountName, State
+Get-AcctADAccount | Where-Object {$_.ADAccountName -like "*MACHINENAME*"} | Select-Object ADAccountName, State
 
 #Step 8 - Create VM
 #Note - you can watch the progress in studio just like Step 6
-New-ProvVM -ProvisioningSchemeName "HCC MCS Prod 2" -ADAccountName "HHINC\HCC-APP101$"
+New-ProvVM -ProvisioningSchemeName "MC Name" -ADAccountName "DOMAIN\MACHINENAME$"
 
 #Step 9 - Register VM with Broker
-New-BrokerMachine -CatalogUid (Get-BrokerCatalog -Name "HCC MCS Prod 2").Uid -MachineName "HHINC\HCC-APP101"
+New-BrokerMachine -CatalogUid (Get-BrokerCatalog -Name "HCC MCS Prod 2").Uid -MachineName "DOMAIN\MACHINENAME"
 
 #Non Powershell steps to finish
 #Add the machine to the delivery Group
